@@ -445,7 +445,7 @@
     }
 ];
     let currentLesson = null;
-    let unlockedLessons = JSON.parse(localStorage.getItem('geo_unlocked')) || [1];
+    let unlockedLessons = JSON.parse(localStorage.getItem('fizyka_unlocked')) || [1];
 
     function init() {
         renderLessonList();
@@ -547,7 +547,7 @@
             msg.innerHTML = `<span style="color:var(--success)">Zaliczone! ✅ Wynik: ${score}/${questions.length}</span>`;
             if(!unlockedLessons.includes(currentLesson.id + 1) && currentLesson.id < lessonsData.length) {
                 unlockedLessons.push(currentLesson.id + 1);
-                localStorage.setItem('geo_unlocked', JSON.stringify(unlockedLessons));
+                localStorage.setItem('fizyka_unlocked', JSON.stringify(unlockedLessons));
             }
         } else {
             msg.innerHTML = `<span style="color:var(--error)">Spróbuj ponownie ❌ Wynik: ${score}/${questions.length} (wymagane 80%)</span>`;
