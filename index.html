@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoMistrz | Kurs Geografii Rozszerzonej</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --locked: #334155;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding-bottom: 50px;
+        }
+
+        header {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--locked);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-container {
+            width: 200px;
+            height: 10px;
+            background: var(--locked);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .lesson-list { display: grid; gap: 15px; }
+
+        .lesson-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .lesson-card:hover:not(.locked) {
+            transform: translateX(10px);
+            background: #2d3a4f;
+            border-color: var(--accent);
+        }
+
+        .lesson-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        .lesson-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(56, 189, 248, 0.1);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: var(--accent);
+            margin-right: 20px;
+        }
+
+        .lesson-info { flex-grow: 1; }
+        .lesson-info h3 { font-size: 1.1rem; margin-bottom: 4px; }
+        .lesson-info span { font-size: 0.8rem; color: var(--text-muted); }
+
+        .status-icon { font-size: 1.2rem; margin-left: 15px; }
+
+        #lesson-view { display: none; }
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .content-body {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .content-body h2 { margin-bottom: 20px; color: var(--accent); border-bottom: 2px solid var(--locked); padding-bottom: 10px; }
+        .content-body p { margin-bottom: 15px; text-align: justify; }
+
+        .quiz-section {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .question-box { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--locked); }
+        .options { margin-top: 10px; }
+        
+        .option-label {
+            display: block;
+            background: #2d3a4f;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option-label:hover { background: #3e4e66; }
+        .option-label input { margin-right: 10px; }
+
+        .correct { background: var(--success) !important; color: white; }
+        .wrong { background: var(--error) !important; color: white; }
+
+        #check-btn {
+            background: var(--accent);
+            color: var(--bg-dark);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+        }
+
+        #result-msg {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>GeoMistrz <i class="fas fa-globe-europe"></i></h1>
+        <p>Kurs Geografii Rozszerzona</p>
+    </div>
+    <div style="text-align: right;">
+        <span id="progress-text">Postęp: 0%</span>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <div id="list-view" class="lesson-list"></div>
+
+    <div id="lesson-view" class="fade-in">
+        <button class="back-btn" onclick="showListView()"><i class="fas fa-arrow-left"></i> Powrót do listy</button>
+        <div id="lesson-content" class="content-body"></div>
+        
+        <div class="quiz-section">
+            <h3>Sprawdź swoją wiedzę</h3>
+            <div id="quiz-container"></div>
+            <button id="check-btn" onclick="checkQuiz()">Sprawdź odpowiedzi</button>
+            <div id="result-msg"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const lessonsData = [
+        {
+            id: 1,
+            title: "Ziemia jako planeta",
+            date: "Rozdział 1.1",
+            icon: "fa-earth-americas",
+            content: `
+                <h2>Kształt i wymiary Ziemi</h2>
+                <p>Ziemia nie jest idealną kulą. Przez wieki poglądy na jej kształt ewoluowały. Dziś wiemy, że Ziemia jest <strong>geoidą</strong> – bryłą, której powierzchnia w każdym miejscu jest prostopadła do pionu (kierunku siły ciężkości). W uproszczeniu kartograficznym przyjmuje się model elipsoidy obrotowej.</p>
+                <p>Promień równikowy Ziemi wynosi około 6378 km, natomiast promień biegunowy jest o ok. 21 km krótszy. Ta różnica wynika z siły odśrodkowej powstałej podczas ruchu obrotowego planety wokół własnej osi. Powierzchnia Ziemi to ok. 510 mln km², z czego ponad 70% zajmują oceany.</p>
+                <h3>Układ Słoneczny</h3>
+                <p>Ziemia jest trzecią planetą od Słońca w Układzie Słonecznym. Należy do grupy planet typu ziemskiego (skalistych), charakteryzujących się dużą gęstością i stałą skorupą. Jej unikalną cechą jest obecność wody w trzech stanach skupienia oraz atmosfera bogata w tlen, co umożliwiło rozwój życia. Magnetosfera Ziemi chroni nas przed szkodliwym promieniowaniem kosmicznym i wiatrem słonecznym.</p>
+            `,
+            questions: [
+                { q: "Jak nazywa się rzeczywisty kształt Ziemi?", options: ["Kula", "Geoida", "Elipsa", "Stożek"], correct: 1 },
+                { q: "Promień równikowy jest dłuższy od biegunowego.", options: ["Prawda", "Fałsz"], correct: 0 },
+                { q: "Ile wynosi powierzchnia Ziemi?", options: ["150 mln km²", "300 mln km²", "510 mln km²", "1 mld km²"], correct: 2 },
+                { q: "Ziemia jest czwartą planetą od Słońca.", options: ["Prawda", "Fałsz"], correct: 1 },
+                { q: "Co chroni Ziemię przed wiatrem słonecznym?", options: ["Księżyc", "Magnetosfera", "Ozon", "Chmury"], correct: 1 }
+            ]
+        },
+        {
+            id: 2,
+            title: "Ruchy Ziemi i ich następstwa",
+            date: "Rozdział 1.2",
+            icon: "fa-sync",
+            content: `
+                <h2>Ruch obrotowy i obiegowy</h2>
+                <p>Ziemia wykonuje dwa główne rodzaje ruchów: obrotowy (wokół własnej osi) oraz obiegowy (wokół Słońca). Ruch obrotowy trwa 23 godziny 56 minut i 4 sekundy. Następstwem tego ruchu jest przede wszystkim dobowa zmiana dnia i nocy.</p>
+                <p>Ruch obiegowy odbywa się po orbicie o kształcie elipsy, a pełne okrążenie trwa 365 dni, 5 godzin, 48 minut i 46 sekund. Oś ziemska jest nachylona do płaszczyzny ekliptyki pod kątem ok. 66°33'.</p>
+                <h3>Następstwa ruchów</h3>
+                <p>Głównym skutkiem ruchu obiegowego jest występowanie astronomicznych pór roku. Ruch obrotowy natomiast powoduje powstawanie siły Coriolisa, która odchyla kierunek poruszania się ciał.</p>
+            `,
+            questions: [
+                { q: "W którą stronę obraca się Ziemia?", options: ["Ze wschodu na zachód", "Z zachodu na wschód"], correct: 1 },
+                { q: "Siła Coriolisa odchyla wiatry na półkuli północnej w:", options: ["Lewo", "Prawo", "W ogóle nie odchyla", "W dół"], correct: 1 },
+                { q: "Ile trwa pełny obieg Ziemi wokół Słońca?", options: ["24h", "365 dni", "365 dni i ok. 6h", "30 dni"], correct: 2 },
+                { q: "Pory roku wynikają z nachylenia osi Ziemi.", options: ["Prawda", "Fałsz"], correct: 0 },
+                { q: "Nad jakim równoleżnikiem góruje słońce 21 marca?", options: ["Równik", "Zwrotnik Raka", "Zwrotnik Koziorożca", "Biegun"], correct: 0 }
+            ]
+        },
+        {
+            id: 3,
+            title: "Współrzędne geograficzne",
+            date: "Rozdział 1.3",
+            icon: "fa-map-location-dot",
+            content: `
+                <h2>Szerokość i długość geograficzna</h2>
+                <p>Współrzędne geograficzne to podstawowe narzędzie nawigacji. Dzielą się na szerokość (φ) oraz długość (λ) geograficzną.</p>
+                <p><strong>Szerokość geograficzna</strong> to kąt między płaszczyzną równika a promieniem ziemskim. Przyjmuje wartości od 0° do 90° N lub S.</p>
+                <p><strong>Długość geograficzna</strong> to kąt dwuścienny między południkiem zerowym a południkiem danego punktu. Przyjmuje wartości od 0° do 180° E lub W.</p>
+            `,
+            questions: [
+                { q: "Jaka jest maksymalna wartość szerokości geograficznej?", options: ["90°", "180°", "360°", "45°"], correct: 0 },
+                { q: "Południk 0° przechodzi przez dzielnicę Londynu:", options: ["Soho", "Greenwich", "Chelsea", "Wimbledon"], correct: 1 },
+                { q: "1 stopień długości to ile minut czasu?", options: ["1 min", "4 min", "15 min", "60 min"], correct: 1 },
+                { q: "Równoleżniki są różnej długości.", options: ["Prawda", "Fałsz"], correct: 0 },
+                { q: "Długość geograficzna może być północna.", options: ["Prawda", "Fałsz"], correct: 1 }
+            ]
+        },
+        {
+            id: 4,
+            title: "Budowa wnętrza Ziemi",
+            date: "Rozdział 2.1",
+            icon: "fa-earth-americas",
+            content: `
+                <h2>Warstwy Ziemi</h2>
+                <p>Wnętrze naszej planety składa się z koncentrycznych warstw różniących się właściwościami fizycznymi i składem chemicznym. Podział ten znamy głównie dzięki badaniom fal sejsmicznych.</p>
+                <p>1. <strong>Skorupa ziemska</strong>: Najbardziej zewnętrzna, sztywna warstwa. Dzieli się na kontynentalną (grubszą) i oceaniczną (cieńszą, ale gęstszą).<br>
+                2. <strong>Płaszcz Ziemi</strong>: Stanowi ok. 80% objętości planety. Dzieli się na płaszcz górny (z plastyczną astenosferą) i dolny.<br>
+                3. <strong>Jądro Ziemi</strong>: Składa się głównie z żelaza i niklu. Jądro zewnętrzne jest płynne, a wewnętrzne stałe (mimo ogromnej temperatury, ze względu na kolosalne ciśnienie).</p>
+                <p>Granice między warstwami nazywamy nieciągłościami (np. Moho między skorupą a płaszczem).</p>
+            `,
+            questions: [
+                { q: "Która warstwa jest płynna?", options: ["Skorupa", "Płaszcz górny", "Jądro zewnętrzne", "Jądro wewnętrzne"], correct: 2 },
+                { q: "Główny składnik jądra to:", options: ["Krzem i glin", "Żelazo i nikiel", "Wapń", "Magnez"], correct: 1 },
+                { q: "Nieciągłość Moho oddziela skorupę od płaszcza.", options: ["Prawda", "Fałsz"], correct: 0 },
+                { q: "Skorupa oceaniczna jest grubsza od kontynentalnej.", options: ["Prawda", "Fałsz"], correct: 1 }
+            ]
+        },
+        {
+            id: 5,
+            title: "Skały i minerały",
+            date: "Rozdział 2.2",
+            icon: "fa-gem",
+            content: `
+                <h2>Skarby skorupy ziemskiej</h2>
+        <p>Wszystko, co widzimy pod stopami – od monumentalnych Tatr po piasek na plaży – składa się z minerałów i skał. <strong>Minerał</strong> to pierwiastek lub związek chemiczny powstały w sposób naturalny, posiadający określoną strukturę krystaliczną (np. diament czy kwarc). <strong>Skała</strong> natomiast to naturalne skupisko jednego lub wielu minerałów.</p>
+        <p>Skały dzielimy na trzy główne grupy ze względu na ich genezę. <strong>Skały magmowe</strong> powstają w wyniku krzepnięcia magmy (głębinowe, np. granit o strukturze jawno-krystalicznej) lub lawy (wylewne, np. bazalt o strukturze skrytokrystalicznej). <strong>Skały osadowe</strong> tworzą się na powierzchni Ziemi poprzez gromadzenie się materiału. Mogą być okruchowe (piaskowiec), pochodzenia organicznego (węgiel, wapienie) lub chemicznego (sól kamienna). Trzecią grupą są <strong>skały metamorficzne</strong>, które powstają, gdy istniejące już skały zostają poddane ogromnemu ciśnieniu i temperaturze w głębi Ziemi, co zmienia ich strukturę (np. marmur powstały z wapienia).</p>
+        <p>Ciekawostką jest obieg materii w przyrodzie: każda skała może stać się inną w procesie cyklu skalnego. Co więcej, twardość minerałów określamy za pomocą 10-stopniowej skali Mohsa, gdzie 1 to miękki talk, a 10 to najtwardszy diament.</p>
+    `,
+    questions: [
+        { q: "Która skała jest przykładem skały magmowej głębinowej?", options: ["Bazalt", "Granit", "Wapień", "Marmur"], correct: 1 },
+        { q: "Z czego powstaje marmur w procesie metamorfizmu?", options: ["Z piaskowca", "Z granitu", "Z wapienia", "Z gliny"], correct: 2 },
+        { q: "Który minerał otwiera skalę Mohsa (stopień 1)?", options: ["Gips", "Kwarc", "Talk", "Diament"], correct: 2 },
+        { q: "Skały osadowe okruchowe powstają z:", options: ["Zastygłej lawy", "Szczątków roślin", "Rozdrobnionych fragmentów starszych skał", "Wysokiego ciśnienia"], correct: 2 },
+        { q: "Sól kamienna to skała osadowa pochodzenia:", options: ["Organicznego", "Chemicznego", "Okruchowego", "Wulkanicznego"], correct: 1 },
+        { q: "Struktura skrytokrystaliczna jest charakterystyczna dla:", options: ["Bazaltu", "Granitu", "Gnejsu", "Węgla"], correct: 0 },
+        { q: "Czy każda skała może ulec przeobrażeniu (metamorfizmowi)?", options: ["Tak", "Nie"], correct: 0 }
+            ]
+        },
+        {
+            id: 6,
+            title: "Procesy geologiczne",
+            date: "Rozdział 2.3",
+            icon: "fa-earth-americas",
+            content: `
+                <h2>Siły rzeźbiące planetę</h2>
+                <p>Procesy <strong>endogeniczne</strong> (wewnętrzne): wulkanizm, ruchy płyt, trzęsienia ziemi. Procesy <strong>egzogeniczne</strong> (zewnętrzne): wietrzenie, erozja, akumulacja.</p>
+            `,
+            questions: [
+                { q: "Który proces jest endogeniczny?", options: ["Wietrzenie", "Wulkanizm", "Erozja", "Deflacja"], correct: 1 },
+                { q: "Dolina U-kształtna to wynik:", options: ["Rzeki", "Wiatru", "Lodowca", "Morza"], correct: 2 },
+                { q: "Orogeneza to powstawanie:", options: ["Skał", "Gór", "Wód", "Gleb"], correct: 1 },
+                { q: "Deflacja to wywiewanie materiału przez:", options: ["Wodę", "Wiatr", "Lód", "Ludzi"], correct: 1 },
+                { q: "Osadzanie materiału to:", options: ["Erozja", "Transport", "Akumulacja", "Wietrzenie"], correct: 2 }
+            ]
+        },
+        {
+            id: 7,
+            title: "Atmosfera",
+            date: "Rozdział 3.1",
+            icon: "fa-cloud",
+            content: `
+                <h2>Powłoka gazowa</h2>
+                <p>Skład: <strong>Azot (78%)</strong>, <strong>Tlen (21%)</strong>. Warstwy: Troposfera (pogoda), Stratosfera (ozon), Mezosfera, Termosfera, Egzosfera.</p>
+            `,
+            questions: [
+                { q: "Gaz dominujący w atmosferze:", options: ["Tlen", "Azot", "Argon", "CO2"], correct: 1 },
+                { q: "Warstwa z ozonem to:", options: ["Troposfera", "Stratosfera", "Mezosfera", "Termosfera"], correct: 1 },
+                { q: "Wiatr wieje z:", options: ["Niżu do wyżu", "Wyżu do niżu", "Północy", "Zachodu"], correct: 1 },
+                { q: "Gdzie zachodzi pogoda?", options: ["Egzosfera", "Troposfera", "Stratosfera", "Mezosfera"], correct: 1 },
+                { q: "Ciśnienie standardowe (hPa):", options: ["1000", "1013", "980", "1050"], correct: 1 }
+            ]
+        },
+        {
+            id: 8,
+            title: "Klimat",
+            date: "Rozdział 3.2",
+            icon: "fa-temperature-high",
+            content: `
+                <h2>Pogoda vs Klimat</h2>
+                <p>Klimat to wieloletni stan pogody (min. 30 lat). Czynniki: szerokość geogr., prądy morskie, wysokość n.p.m.</p>
+            `,
+            questions: [
+                { q: "Ile lat obserwacji wymaga klimat?", options: ["1", "10", "30", "100"], correct: 2 },
+                { q: "Deszcze zenitalne występują w strefie:", options: ["Zwrotnikowej", "Równikowej", "Umiarkowanej", "Polarnej"], correct: 1 },
+                { q: "Prąd Północnoatlantycki jest:", options: ["Zimny", "Ciepły", "Głęboki", "Słodki"], correct: 1 },
+                { q: "Polska leży w klimacie:", options: ["Morskim", "Umiarkowanym", "Górskim", "Tropikalnym"], correct: 1 },
+                { q: "Monsun to wiatr:", options: ["Stały", "Lokalny", "Sezonowy", "Pustynny"], correct: 2 }
+            ]
+        },
+        {
+            id: 9,
+            title: "Wody na Ziemi (Hydrosfera)",
+            date: "Rozdział 4.1",
+            icon: "fa-droplet",
+            content: `
+                <h2>Błękitna Planeta i jej zasoby</h2>
+                <p>Ziemia jest nazywana błękitną planetą, ponieważ wody (hydrosfera) pokrywają aż 71% jej powierzchni. Jednak <strong>97,5% to wody słone</strong> w oceanach i morzach. Wody słodkie to zaledwie 2,5%, z czego większość uwięziona jest w lodowcach i lądolodach (Antarktyda, Grenlandia). Woda dostępna do bezpośredniego spożycia przez człowieka (rzeki, jeziora, płytkie wody podziemne) to zaledwie ułamek procenta wszystkich zasobów.</p>
+                <p>Woda na Ziemi jest w ciągłym ruchu, co nazywamy <strong>cyklem hydrologicznym</strong>. Składa się on z parowania (z oceanów i roślin – transpiracja), przemieszczania wilgoci w atmosferze, opadów oraz odpływu powierzchniowego i podziemnego. Oceany pełnią rolę gigantycznego magazynu ciepła, stabilizując klimat globu poprzez prądy morskie.</p>
+                <p>Ważnym elementem wód lądowych są rzeki i jeziora. Najdłuższą rzeką świata jest Nil (lub Amazonka, zależnie od przyjętego źródła), a najgłębszym jeziorem – Bajkał w Rosji. Wody podziemne stanowią kluczowe źródło wody pitnej, ale ich nadmierna eksploatacja prowadzi do obniżania poziomu zwierciadła wód (leje depresyjne). W dobie zmian klimatu racjonalne gospodarowanie wodą staje się największym wyzwaniem ludzkości.</p>
+            `,
+            questions: [
+                { q: "Ile % wody na Ziemi to wody słodkie?", options: ["97,5%", "2,5%", "71%", "10%"], correct: 1 },
+                { q: "Gdzie znajduje się najwięcej wody słodkiej?", options: ["W rzekach", "W lodowcach i lądolodach", "W jeziorach", "W atmosferze"], correct: 1 },
+                { q: "Proces parowania wody z roślin to:", options: ["Sublimacja", "Transpiracja", "Infiltracja", "Kondensacja"], correct: 1 },
+                { q: "Najgłębsze jezioro świata to:", options: ["Tanganika", "Jezioro Górne", "Bajkał", "Morze Martwe"], correct: 2 },
+                { q: "Największy ocean na Ziemi to:", options: ["Atlantycki", "Indyjski", "Arktyczny", "Spokojny"], correct: 3 },
+                { q: "Wsiąkanie wody w glebę nazywamy:", options: ["Infiltracją", "Ewapotranspiracją", "Retencją", "Kondensacją"], correct: 0 },
+                { q: "Zasolenie wód oceanicznych wyraża się w:", options: ["Procentach", "Promilach", "Kilogramach", "Stopniach"], correct: 1 },
+                { q: "Rzeka, która nie wysycha przez cały rok, to rzeka:", options: ["Epizodyczna", "Okresowa", "Stała", "Ufna"], correct: 2 },
+                { q: "Obszar, z którego wody spływają do jednego systemu rzecznego, to:", options: ["Dolina", "Dorzecze", "Zlewisko", "Dział wodny"], correct: 1 },
+                { q: "Prąd morski płynący od równika ku biegunom jest zazwyczaj:", options: ["Zimny", "Ciepły", "Słony", "Głęboki"], correct: 1 }
+            ]
+        },
+        {
+            id: 10,
+            title: "Gleby i Biosfera",
+            date: "Rozdział 4.2",
+            icon: "fa-leaf",
+            content: `
+                <h2>Żywa powłoka Ziemi</h2>
+                <p><strong>Pedosfera</strong> (powłoka glebowa) powstaje na styku wszystkich pozostałych sfer Ziemi. Proces powstawania gleby, czyli pedogeneza, trwa setki lat. Gleba składa się z części mineralnej (rozdrobniona skała macierzysta), organicznej (próchnica/humus), wody oraz powietrza. Najżyźniejszą glebą świata jest <strong>czarnoziem</strong>, powstający na podłożu lessowym przy udziale bogatej roślinności trawiastej.</p>
+                <p>Wraz z glebami nierozerwalnie związana jest <strong>biosfera</strong>, czyli świat roślin i zwierząt. Na Ziemi występuje wyraźna strefowość roślinna, ściśle powiązana ze strefami klimatycznymi. Od równika ku biegunom spotykamy: wilgotne lasy równikowe, sawanny, pustynie, twardolistną roślinność śródziemnomorską, lasy liściaste i mieszane, tajgę (lasy iglaste), tundrę oraz pustynie lodowe.</p>
+                <p>W górach strefowość zastąpiona jest przez piętrowość. Wraz ze wzrostem wysokości zmieniają się warunki klimatyczne, co wymusza zmianę roślinności (np. w Tatrach od regla dolnego po turnie). Ochrona bioróżnorodności jest kluczowa, gdyż zniszczenie jednego ogniwa w ekosystemie może prowadzić do nieodwracalnych zmian w całej biosferze.</p>
+            `,
+            questions: [
+                { q: "Najżyźniejsza gleba świata to:", options: ["Bielica", "Czarnoziem", "Gleba cynamonowa", "Tundra"], correct: 1 },
+                { q: "Główny składnik organiczny gleby to:", options: ["Piasek", "Ił", "Próchnica (humus)", "Powietrze"], correct: 2 },
+                { q: "Tajga to lasy:", options: ["Liściaste", "Mieszane", "Iglaste", "Namorzynowe"], correct: 2 },
+                { q: "Roślinność charakterystyczna dla klimatu śródziemnomorskiego to:", options: ["Makia", "Stepy", "Pampas", "Tundra"], correct: 0 },
+                { q: "W jakim klimacie powstają gleby laterytowe (czerwonoziemy)?", options: ["Umiarkowanym", "Równikowym", "Pustynnym", "Okołobiegunowym"], correct: 1 },
+                { q: "Proces wymywania składników w głąb gleby to:", options: ["Akumulacja", "Eluwiacja", "Erozja", "Wietrzenie"], correct: 1 },
+                { q: "Piętra roślinne w górach wynikają ze zmiany:", options: ["Szerokości geogr.", "Wysokości n.p.m.", "Długości geogr.", "Zasolenia"], correct: 1 },
+                { q: "Formacja roślinna złożona z traw i pojedynczych drzew (np. akacji) to:", options: ["Step", "Sawanna", "Tajga", "Puszcza"], correct: 1 },
+                { q: "Skała, na której tworzy się gleba, to:", options: ["Skała macierzysta", "Skała osadowa", "Skała bazowa", "Skała twarda"], correct: 0 },
+                { q: "Która strefa roślinna jest najbardziej wysunięta na północ?", options: ["Tajga", "Tundra", "Lasy mieszane", "Sawanna"], correct: 1 }
+            ]
+        },
+        {
+            id: 11,
+            title: "Ludność świata",
+            date: "Rozdział 5.1",
+            icon: "fa-users",
+            content: `
+                <h2>Demografia i rozmieszczenie ludzi</h2>
+                <p>Liczba ludności świata przekroczyła już 8 miliardów. Rozmieszczenie ludzi na Ziemi jest bardzo nierównomierne – decydują o tym czynniki przyrodnicze (dostęp do wody, klimat, rzeźba terenu) oraz społeczno-ekonomiczne. Największe skupiska ludności to Azja Wschodnia (Chiny), Azja Południowa (Indie) oraz Europa Zachodnia i Środkowa.</p>
+                <p>Kluczowym pojęciem jest <strong>przyrost naturalny</strong> – różnica między liczbą urodzeń a liczbą zgonów. W krajach rozwijających się (np. w Afryce) obserwujemy eksplozję demograficzną, natomiast w krajach wysoko rozwiniętych (np. Niemcy, Polska, Japonia) występuje regres demograficzny i starzenie się społeczeństw. Proces ten ilustrują piramidy wieku i płci.</p>
+                <p>Migracje, czyli przemieszczanie się ludności, dzielimy na wewnętrzne i zewnętrzne oraz na emigrację (wyjazd) i imigrację (przyjazd). Główne przyczyny migracji to poszukiwanie pracy (ekonomiczne), wojny (polityczne) oraz katastrofy naturalne. Wielokulturowość staje się cechą charakterystyczną współczesnych społeczeństw, niosąc ze sobą zarówno korzyści, jak i wyzwania integracyjne.</p>
+            `,
+            questions: [
+                { q: "Liczba ludności świata wynosi obecnie ok.:", options: ["1 mld", "5 mld", "8 mld", "12 mld"], correct: 2 },
+                { q: "Przyrost naturalny to:", options: ["Urodzenia + Zgony", "Urodzenia - Zgony", "Imigracja - Emigracja", "Liczba dzieci"], correct: 1 },
+                { q: "W jakim kraju występuje regres demograficzny?", options: ["Nigeria", "Indie", "Niemcy", "Etiopia"], correct: 2 },
+                { q: "Najludniejszym kontynentem świata jest:", options: ["Afryka", "Europa", "Azja", "Ameryka Płn."], correct: 2 },
+                { q: "Osoba wyjeżdżająca z kraju to:", options: ["Imigrant", "Emigrant", "Repatriant", "Uchodźca"], correct: 1 },
+                { q: "Gęstość zaludnienia mierzymy w osobach na:", options: ["100 metrów", "1 km²", "1 miasto", "1 kraj"], correct: 1 },
+                { q: "Eksplozja demograficzna dotyczy głównie krajów:", options: ["Bogatych", "Słabo rozwiniętych", "Wyspiarskich", "Zimnych"], correct: 1 },
+                { q: "Który czynnik najbardziej przyciąga osadnictwo?", options: ["Wysokie góry", "Pustynie", "Dostęp do wody i żyzne gleby", "Gęste lasy"], correct: 2 },
+                { q: "Piramida wieku o szerokiej podstawie oznacza:", options: ["Młode społeczeństwo", "Stare społeczeństwo", "Brak dzieci", "Wysoki poziom medycyny"], correct: 0 },
+                { q: "Saldo migracji to różnica między:", options: ["Urodzeniami a zgonami", "Imigrantami a emigrantami", "Kobietami a mężczyznami", "Miastem a wsią"], correct: 1 }
+            ]
+        },
+        {
+            id: 12, title: "Urbanizacja", icon: "fa-city", date: "Rozdział 5.2",
+            content: "<h2>Świat miast</h2><p>Urbanizacja to proces rozwoju miast. Wskaźnik urbanizacji to % ludności miejskiej. Megalopolis to wielkie systemy miast (np. w USA). Problemem krajów biednych jest urbanizacja pozorna i powstawanie slumsów (faweli).</p>",
+            questions: [
+                {q:"Większość ludzi na świecie mieszka w:", options:["Wsiach","Miastach"], correct:1},
+                {q:"Megalopolis to połączenie wielu:", options:["Wsi","Aglomeracji","Państw","Lasów"], correct:1},
+                {q:"Slumsy (fawele) to dzielnice:", options:["Luksusowe","Biedy","Przemysłowe","Naukowe"], correct:1},
+                {q:"Wskaźnik urbanizacji w Polsce to ok.:", options:["30%","60%","90%","10%"], correct:1},
+                {q:"Suburbanizacja to ucieczka na:", options:["Wieś","Przedmieścia","Centrum","Biegun"], correct:1},
+                {q:"Czy miasto może być stolicą?", options:["Tak","Nie"], correct:0},
+                {q:"Funkcja uzdrowiskowa to funkcja:", options:["Miasta","Wsi","Lasu","Morza"], correct:0},
+                {q:"Czy Tokio to wielka aglomeracja?", options:["Tak","Nie"], correct:0},
+                {q:"Największa urbanizacja jest w krajach:", options:["Bogatych","Biednych"], correct:0},
+                {q:"Czy miasto zmienia mikroklimat?", options:["Tak","Nie"], correct:0}
+            ]
+        },
+        {
+            id: 13, title: "Gospodarka", icon: "fa-industry", date: "Rozdział 6.1",
+            content: "<h2>Sektory gospodarki</h2><p>I sektor to rolnictwo i leśnictwo. II sektor to przemysł i budownictwo. III sektor to usługi (handel, transport, edukacja). W krajach wysoko rozwiniętych ponad 70% ludzi pracuje w usługach. PKB mierzy wartość dóbr i usług.</p>",
+            questions: [
+                {q:"Sektor III to:", options:["Rolnictwo","Przemysł","Usługi","Górnictwo"], correct:2},
+                {q:"Rolnictwo to sektor:", options:["I","II","III","IV"], correct:0},
+                {q:"PKB to produkt krajowy:", options:["Gospodarki","Brutto","Netto","Złotych"], correct:1},
+                {q:"Edukacja należy do sektora:", options:["I","II","III"], correct:2},
+                {q:"Krzemowa Dolina to przykład:", options:["Rolnictwa","Technopolii","Lasu","Kopalni"], correct:1},
+                {q:"Czy turystyka to usługa?", options:["Tak","Nie"], correct:0},
+                {q:"Przemysł ciężki to np.:", options:["Hutnictwo","Bankowość","Szkolnictwo","Handel"], correct:0},
+                {q:"Czy kraje biedne mają dużo usług?", options:["Tak","Nie"], correct:1},
+                {q:"Górnictwo zaliczamy do:", options:["Rolnictwa","Przemysłu","Usług"], correct:1},
+                {q:"Czy transport to usługa?", options:["Tak","Nie"], correct:0}
+            ]
+        },
+        {
+            id: 14, title: "Globalizacja", icon: "fa-earth-africa", date: "Rozdział 6.2",
+            content: "<h2>Globalna Wioska</h2><p>Globalizacja to proces łączenia gospodarek i kultur. Skutki to wolny handel, łatwe podróże, internet, ale też zanik lokalnych tradycji. Głównymi motorami są korporacje transnarodowe oraz rozwój telekomunikacji.</p>",
+            questions: [
+                {q:"Globalna wioska dotyczy:", options:["Małej wsi","Całego świata","Internetu","Kosmosu"], correct:1},
+                {q:"Główny motor globalizacji to:", options:["Konie","Internet i transport","Wojny","Brak handlu"], correct:1},
+                {q:"Korporacja transnarodowa działa w:", options:["Jednym kraju","Wielu krajach"], correct:1},
+                {q:"McDonald's to przykład globalizacji:", options:["Ekologicznej","Kulturowej","Religijnej","Zbrojnej"], correct:1},
+                {q:"Czy globalizacja ułatwia handel?", options:["Tak","Nie"], correct:0},
+                {q:"Język globalny to dziś głównie:", options:["Polski","Angielski","Łacina","Greka"], correct:1},
+                {q:"Czy globalizacja niszczy lokalne kultury?", options:["Tak","Nie"], correct:0},
+                {q:"Unia Europejska to przykład integracji?", options:["Tak","Nie"], correct:0},
+                {q:"Czy internet jest częścią globalizacji?", options:["Tak","Nie"], correct:0},
+                {q:"Alterglobaliści to osoby:", options:["Popierające ją","Krytykujące ją"], correct:1}
+            ]
+        },
+        {
+            id: 15,
+            title: "Przeszłość geologiczna Ziemi",
+            date: "Rozdział 7.1",
+            icon: "fa-hourglass-half",
+            content: `
+                <h2>Dzieje Ziemi i Tabela Stratygraficzna</h2>
+                <p>Historia naszej planety liczy około 4,6 miliarda lat. Dzielimy ją na eony, ery, okresy i epoki. Kluczowym narzędziem geologa jest tabela stratygraficzna. Wyróżniamy ery: Archozoiczną, Proterozoiczną (prekambr), Paleozoiczną, Mezozoiczną oraz Kenozoiczną. Każda z nich charakteryzowała się innymi procesami górotwórczymi (orogenezami). Najstarsza to orogeneza kaledońska (sylur/dewon), następnie hercyńska (karbon/perm) oraz najmłodsza i najpotężniejsza – alpejska, która trwa do dziś i uformowała najwyższe łańcuchy górskie świata, jak Himalaje, Alpy czy Tatry.</p>
+                <p>Ważnym elementem nauki o przeszłości są skamieniałości przewodnie – szczątki organizmów, które żyły krótko, ale występowały powszechnie na dużych obszarach. Dla ery paleozoicznej są to trylobity, dla mezozoicznej amonity i belemnity, a dla kenozoiku m.in. numulity. Dzięki nim możemy określać wiek względny skał. Wiek bezwzględny podajemy w latach, stosując metody izotopowe (np. węglową C14 dla młodszych osadów lub uranowo-ołowiową dla najstarszych skał). Historia Ziemi to także wielkie wymierania, z których najsłynniejsze miało miejsce na końcu kredy, kończąc panowanie dinozaurów.</p>
+                <p>Warto pamiętać o teorii dryfu kontynentów Alfreda Wegenera, która ewoluowała w teorię tektoniki płyt litosfery. Dawniej istniał jeden superkontynent – Pangea, otoczony oceanem Panthalassa. Rozpad Pangei doprowadził do powstania dzisiejszego układu lądów. Procesy te wpływały na klimat, poziom mórz i ewolucję życia, tworząc fundament pod dzisiejszą strukturę geologiczną świata, którą badamy poprzez wiercenia i metody sejsmiczne.</p>
+            `,
+            questions: [
+                { q: "Ile lat ma Ziemia?", options: ["2 mld", "4,6 mld", "10 mld", "100 mln"], correct: 1 },
+                { q: "Skamieniałości przewodnie mezozoiku to:", options: ["Trylobity", "Amonity", "Numulity", "Paprocie"], correct: 1 },
+                { q: "Najmłodsza orogeneza to:", options: ["Kaledońska", "Hercyńska", "Alpejska", "Sudecka"], correct: 2 },
+                { q: "Superkontynent istniejący pod koniec paleozoiku to:", options: ["Gondwana", "Pangea", "Laurazja", "Rodinia"], correct: 1 },
+                { q: "W której erze żyły dinozaury?", options: ["Paleozoicznej", "Mezozoicznej", "Kenozoicznej", "Prekambrze"], correct: 1 },
+                { q: "Trylobity są charakterystyczne dla ery:", options: ["Archozoicznej", "Paleozoicznej", "Mezozoicznej", "Kenozoicznej"], correct: 1 },
+                { q: "Metoda C14 służy do określania wieku:", options: ["Bezwzględnego", "Względnego", "Skał magmowych", "Planet"], correct: 0 },
+                { q: "Węgiel kamienny w Polsce powstał głównie w:", options: ["Kredzie", "Karbonie", "Neogenie", "Kambrze"], correct: 1 },
+                { q: "Najdłuższy okres w dziejach Ziemi to:", options: ["Kenozoik", "Prekambr", "Paleozoik", "Mezozoik"], correct: 1 },
+                { q: "Teorię dryfu kontynentów sformułował:", options: ["Darwin", "Wegener", "Humboldt", "Kopernik"], correct: 1 }
+            ]
+        },
+        {
+            id: 16,
+            title: "Geologia i rzeźba Polski",
+            date: "Rozdział 7.2",
+            icon: "fa-mountain",
+            content: `
+                <h2>Budowa geologiczna i krajobraz Polski</h2>
+                <p>Polska leży w unikalnym miejscu – na styku trzech wielkich jednostek geologicznych Europy: platformy wschodnioeuropejskiej (prekambryjskiej), platformy paleozoicznej oraz obszaru fałdowań alpejskich. Granicę między dwiema pierwszymi wyznacza strefa Teisseyre’a-Tornquista (T-T). Taka budowa sprawia, że nasz kraj jest niezwykle zróżnicowany pod względem surowców i form terenu. Na północy dominują osady polodowcowe, w centrum niziny, a na południu góry o różnym wieku i budowie – od starych Sudetów po młode, wysokie Tatry.</p>
+                <p>Kluczowy wpływ na obecny wygląd Polski miał plejstocen i występujące wtedy zlodowacenia (skandynawskie). Wyróżniamy trzy główne: Sanu, Środkowopolskie i Najmłodsze – Wisły. Lądolód pozostawił po sobie formy erozyjne (np. rynny polodowcowe) oraz akumulacyjne (moreny czołowe i denne, sandry, głazy narzutowe). Północna Polska ma rzeźbę młodoglacjalną (wyraźne wzgórza morenowe, liczne jeziora), natomiast środkowa Polska to rzeźba staroglacjalna, gdzie formy te zostały już w dużej mierze wyrównane przez procesy denudacyjne.</p>
+                <p>Charakterystyczny dla Polski jest pasowy układ rzeźby terenu. Idąc od północy, mamy: pobrzeża, pojezierza, niziny środkowopolskie, wyżyny, kotliny podkarpackie oraz góry. Każdy pas ma inną genezę i walory. Przykładowo, pas wyżyn to obszar występowania skał wapiennych (Jura Krakowsko-Częstochowska) oraz lessów, na których wytworzyły się żyzne gleby. Znajomość tych jednostek jest kluczowa dla zrozumienia rozmieszczenia ludności, rolnictwa i przemysłu w Polsce.</p>
+            `,
+            questions: [
+                { q: "Strefa oddzielająca platformę wschodnią od zachodniej to:", options: ["Strefa T-T", "Uskok Sanu", "Rów Wisły", "Góry Świętokrzyskie"], correct: 0 },
+                { q: "Ile było głównych zlodowaceń w Polsce?", options: ["1", "3", "5", "10"], correct: 1 },
+                { q: "Najwyższy szczyt Polski (Rysy) leży w:", options: ["Sudetach", "Bieszczadach", "Tatrach", "Górach Świętokrzyskich"], correct: 2 },
+                { q: "Wzgórza usypane przed czołem lądolodu to:", options: ["Moreny denne", "Moreny czołowe", "Eskery", "Drumliny"], correct: 1 },
+                { q: "Rzeźba młodoglacjalna występuje na:", options: ["Wyżynach", "Pojezierzach", "Nizinach środkowych", "Pobrzeżach"], correct: 1 },
+                { q: "Głazy przytransportowane przez lądolód to:", options: ["Ostańce", "Erratyki", "Stalaktyty", "Piargi"], correct: 1 },
+                { q: "Jura Krakowsko-Częstochowska zbudowana jest z:", options: ["Granitów", "Węgla", "Piaskowców", "Wapieni"], correct: 3 },
+                { q: "Który pas rzeźby leży bezpośrednio na południe od pojezierzy?", options: ["Góry", "Niziny", "Wyżyny", "Pobrzeża"], correct: 1 },
+                { q: "Góry Świętokrzyskie powstały podczas orogenezy:", options: ["Tylko alpejskiej", "Kaledońskiej i hercyńskiej", "Tylko kaledońskiej", "Nie są górami"], correct: 1 },
+                { q: "Najniższy punkt Polski (depresja) znajduje się na:", options: ["Polesiu", "Pojezierzu Mazurskim", "Nizinie Mazowieckiej", "Żuławach Wiślanych"], correct: 3 }
+            ]
+        },
+        {
+            id: 17,
+            title: "Klimat i wody Polski",
+            date: "Rozdział 7.3",
+            icon: "fa-cloud-showers-heavy",
+            content: `
+                <h2>Warunki atmosferyczne i zasoby wodne kraju</h2>
+                <p>Klimat Polski określa się jako umiarkowany ciepły przejściowy. Ta "przejściowość" oznacza ścieranie się mas powietrza oceanicznego (z zachodu) i kontynentalnego (ze wschodu). Powoduje to dużą zmienność pogody z dnia na dzień i z roku na rok. Dominują masy powietrza polarnomorskiego (PPm), które przynoszą chłód latem i odwilż zimą. Powietrze polarnokontynentalne (PPk) daje upały latem i silne mrozy zimą. W Polsce wyróżniamy aż 6 termicznych pór roku, w tym przedwiośnie i przedzimie.</p>
+                <p>Średnia roczna suma opadów w Polsce wynosi około 600 mm, jednak jest ona zróżnicowana – od ponad 1000 mm w górach do poniżej 500 mm w Wielkopolsce (tzw. cień opadowy pojezierzy). Polska boryka się z problemem deficytu wody. Zasoby wody przypadające na jednego mieszkańca są jednymi z najniższych w Europie. Przyczyną jest nie tylko niska suma opadów, ale także ich nierównomierność oraz wysokie parowanie w okresach letnich.</p>
+                <p>Główne rzeki Polski to Wisła i Odra. Mają one ustrój deszczowo-śnieżny, co oznacza dwa maksima stanów wody: wiosenne (roztopowe) i letnie (opadowe). Większość terytorium Polski leży w zlewisku Morza Bałtyckiego, ale niewielkie skrawki należą do zlewisk Morza Czarnego (np. dorzecze Orawy) i Morza Północnego. Jeziorność Polski wynosi około 1%, a największe ich skupiska to Pojezierze Mazurskie i Pomorskie. Największym jeziorem są Śniardwy, a najgłębszym Hańcza.</p>
+            `,
+            questions: [
+                { q: "Jaki typ klimatu panuje w Polsce?", options: ["Morski", "Kontynentalny", "Umiarkowany przejściowy", "Podzwrotnikowy"], correct: 2 },
+                { q: "Masa powietrza przynosząca zimą odwilż to:", options: ["PPk", "PPm", "PA", "PZw"], correct: 1 },
+                { q: "Ile termicznych pór roku wyróżniamy w Polsce?", options: ["4", "5", "6", "8"], correct: 2 },
+                { q: "W którym regionie Polski opady są najniższe?", options: ["Tatry", "Wielkopolska", "Mazury", "Pobrzeże"], correct: 1 },
+                { q: "Najdłuższa rzeka Polski to:", options: ["Odra", "Warta", "Wisła", "Bug"], correct: 2 },
+                { q: "Ustrój rzek w Polsce to:", options: ["Lodowcowy", "Deszczowo-śnieżny", "Deszczowy oceaniczny", "Stały"], correct: 1 },
+                { q: "Najgłębsze jezioro Polski to:", options: ["Śniardwy", "Mamry", "Hańcza", "Morskie Oko"], correct: 2 },
+                { q: "Do którego zlewiska należy 99% obszaru Polski?", options: ["M. Czarnego", "M. Północnego", "M. Bałtyckiego", "M. Kaspijskiego"], correct: 2 },
+                { q: "Wiatr halny w Tatrach to wiatr typu:", options: ["Bryza", "Pasat", "Fen", "Monsun"], correct: 2 },
+                { q: "Średnie opady w Polsce to ok.:", options: ["200 mm", "600 mm", "1200 mm", "2000 mm"], correct: 1 }
+            ]
+        },
+        {
+            id: 18,
+            title: "Rolnictwo świata i Polski",
+            date: "Rozdział 8.1",
+            icon: "fa-wheat-awn",
+            content: `
+                <h2>Produkcja żywności i gospodarka rolna</h2>
+                <p>Rolnictwo jest jednym z trzech sektorów gospodarki (I sektor). Jego rozwój zależy od czynników przyrodniczych (klimat, gleba, rzeźba terenu) oraz pozaprzyrodniczych (poziom agrotechniki, struktura agrarna, polityka rolna państwa). Na świecie wyróżniamy rolnictwo intensywne (duże nakłady pracy lub kapitału na jednostkę powierzchni, wysokie plony) oraz ekstensywne (niskie nakłady, wykorzystanie dużych obszarów, niższe plony). Przykładem rolnictwa intensywnego kapitałowego są kraje Europy Zachodniej, a pracochłonnego – uprawa ryżu w Azji Południowo-Wschodniej.</p>
+                <p>Główne uprawy świata to zboża (pszenica, ryż, kukurydza), rośliny bulwiaste, oleiste oraz używki. Pszenica wymaga dobrych gleb i umiarkowanego klimatu (USA, Chiny, Indie, Rosja, Polska). Ryż jest podstawą wyżywienia miliardów ludzi w Azji, wymagając wysokich temperatur i dużej wilgotności. Kukurydza, pochodząca z Ameryki, jest obecnie uprawiana niemal wszędzie jako roślina paszowa i spożywcza. W produkcji zwierzęcej dominuje chów bydła (mleczny i mięsny), trzody chlewnej oraz drobiu.</p>
+                <p>Rolnictwo w Polsce charakteryzuje się dużym rozdrobnieniem gospodarstw, zwłaszcza w południowo-wschodniej części kraju. Dominują gleby średniej i słabej jakości (bielicowe, płowe). Mimo to, Polska jest liczącym się w Europie producentem żyta, ziemniaków, buraków cukrowych oraz owoców (jabłka, maliny). Ważnym trendem jest rozwój rolnictwa ekologicznego oraz specjalizacja gospodarstw. Po wejściu do Unii Europejskiej polskie rolnictwo przeszło ogromną modernizację dzięki dopłatom bezpośrednim i funduszom strukturalnym.</p>
+            `,
+            questions: [
+                { q: "Który sektor gospodarki obejmuje rolnictwo?", options: ["I", "II", "III", "IV"], correct: 0 },
+                { q: "Najważniejsza roślina żywieniowa Azji to:", options: ["Pszenica", "Ryż", "Kukurydza", "Ziemniak"], correct: 1 },
+                { q: "Rolnictwo o dużych nakładach i wysokich plonach to:", options: ["Ekstensywne", "Intensywne", "Tradycyjne", "Żarowe"], correct: 1 },
+                { q: "Główne czynniki przyrodnicze rolnictwa to:", options: ["Maszyny", "Gleba i klimat", "Rynek zbytu", "Nawozy"], correct: 1 },
+                { q: "Pszenica wymaga gleb:", options: ["Słabych", "Bardzo dobrych", "Piaszczystych", "Torfowych"], correct: 1 },
+                { q: "Chów bydła w Brazylii ma charakter:", options: ["Intensywny", "Ekstensywny", "Egzotyczny", "Domowy"], correct: 1 },
+                { q: "Polska jest potęgą w eksporcie:", options: ["Ryżu", "Jabłek", "Bananów", "Kawy"], correct: 1 },
+                { q: "Struktura agrarna w Polsce cechuje się:", options: ["Latyfundiami", "Rozdrobnieniem", "Brakem ziemi", "Państwową własnością"], correct: 1 },
+                { q: "Rośliny przemysłowe to np.:", options: ["Pszenica i jęczmień", "Buraki cukrowe i rzepak", "Ziemniaki", "Trawy"], correct: 1 },
+                { q: "GMO to organizmy:", options: ["Organiczne", "Modyfikowane genetycznie", "Naturalne", "Górskie"], correct: 1 }
+            ]
+        },
+        {
+            id: 19,
+            title: "Energetyka i surowce mineralne",
+            date: "Rozdział 8.2",
+            icon: "fa-bolt",
+            content: `
+                <h2>Energia dla świata i zasoby Ziemi</h2>
+                <p>Surowce mineralne dzielimy na energetyczne (węgiel, ropa, gaz, uran), metaliczne (żelazo, miedź, złoto), chemiczne (sól, siarka) oraz skalne. Ich rozmieszczenie jest nierównomierne i wynika z budowy geologicznej. Największe złoża ropy naftowej i gazu ziemnego znajdują się w rejonie Zatoki Perskiej, Rosji oraz USA. Węgiel kamienny wydobywa się głównie w Chinach, USA, Indiach i Polsce (Górny Śląsk). Wydobycie surowców jest podstawą przemysłu, ale wiąże się z ogromną degradacją środowiska.</p>
+                <p>Energetyka światowa opiera się wciąż w większości na paliwach kopalnych (ok. 80%), co przyczynia się do globalnego ocieplenia. Udział węgla jednak systematycznie spada na rzecz gazu ziemnego oraz odnawialnych źródeł energii (OZE). Do OZE zaliczamy energię słońca, wiatru, wody, geotermalną oraz biomasę. Są one ekologiczne i niewyczerpalne, ale ich produkcja zależy od warunków naturalnych (nasłonecznienie, wietrzność). Osobnym tematem jest energetyka jądrowa – bezemisyjna, ale budząca kontrowersje ze względu na odpady i bezpieczeństwo.</p>
+                <p>Bilans energetyczny Polski opiera się historycznie na węglu kamiennym i brunatnym. Obecnie trwa transformacja energetyczna, mająca na celu zwiększenie udziału OZE (głównie farmy wiatrowe na Bałtyku i fotowoltaika) oraz budowę pierwszej elektrowni jądrowej. Polska jest również ważnym producentem miedzi (KGHM – rejon Lubina i Polkowic), srebra oraz soli kamiennej. Racjonalne gospodarowanie surowcami i przechodzenie na gospodarkę obiegu zamkniętego to kluczowe wyzwania współczesności.</p>
+            `,
+            questions: [
+                { q: "Który surowiec dominuje w energetyce Polski?", options: ["Gaz", "Węgiel", "Ropa", "Uran"], correct: 1 },
+                { q: "OPEC to organizacja krajów eksportujących:", options: ["Węgiel", "Ropę naftową", "Złoto", "Zboże"], correct: 1 },
+                { q: "Energia z wnętrza Ziemi to energia:", options: ["Słoneczna", "Biomasy", "Geotermalna", "Wodna"], correct: 2 },
+                { q: "Który kraj jest największym producentem energii z węgla?", options: ["Polska", "Niemcy", "Chiny", "Francja"], correct: 2 },
+                { q: "Surowcem do produkcji energii jądrowej jest:", options: ["Węgiel", "Uran", "Miedź", "Siarka"], correct: 1 },
+                { q: "Bezemisyjne źródło energii to:", options: ["Węgiel brunatny", "Wiatr", "Gaz łupkowy", "Torf"], correct: 1 },
+                { q: "KGHM w Polsce wydobywa głównie:", options: ["Węgiel", "Miedź i srebro", "Sól", "Żelazo"], correct: 1 },
+                { q: "Gdzie w Polsce wydobywa się węgiel brunatny?", options: ["Śląsk", "Bełchatów", "Wieliczka", "Lublin"], correct: 1 },
+                { q: "Do odnawialnych źródeł energii nie należy:", options: ["Słońce", "Wiatr", "Gaz ziemny", "Woda"], correct: 2 },
+                { q: "Fotowoltaika przetwarza energię:", options: ["Wiatru", "Słońca", "Wody", "Ruchu"], correct: 1 }
+            ]
+        },
+        {
+            id: 20,
+            title: "Relacje człowiek – środowisko",
+            date: "Rozdział 9.1",
+            icon: "fa-hand-holding-heart",
+            content: `
+                <h2>Wpływ antropopresji na planetę</h2>
+                <p>Działalność człowieka (antropopresja) prowadzi do głębokich zmian w środowisku przyrodniczym. Najpoważniejszym problemem globalnym jest nasilenie efektu cieplarnianego, spowodowane emisją gazów (CO2, metan) ze spalania paliw kopalnych i rolnictwa. Prowadzi to do wzrostu średniej temperatury globu, topnienia lodowców, podnoszenia się poziomu oceanów oraz częstszych ekstremalnych zjawisk pogodowych (susze, huragany). Walka ze zmianami klimatu odbywa się poprzez porozumienia międzynarodowe, takie jak Porozumienie Paryskie.</p>
+                <p>Inne istotne problemy to dziura ozonowa (zanikanie warstwy ozonu chroniącej przed UV, głównie przez freony), kwaśne deszcze (powstające z emisji tlenków siarki i azotu, niszczące lasy i budowle) oraz smog (zanieczyszczenie powietrza w miastach). Poważnym wyzwaniem jest również pustynnienie, dotykające zwłaszcza kraje Sahelu w Afryce, oraz wylesianie (deforestacja) Amazonii i Indonezji. Zmniejszanie bioróżnorodności poprzez niszczenie siedlisk zwierząt grozi załamaniem ekosystemów.</p>
+                <p>Koncepcja zrównoważonego rozwoju (Sustainable Development) zakłada takie korzystanie z zasobów Ziemi, aby zaspokoić potrzeby obecnego pokolenia, nie odbierając tej możliwości przyszłym pokoleniom. Obejmuje ona ochronę przyrody, sprawiedliwość społeczną i stabilny wzrost gospodarczy. Segregacja odpadów, recykling, oszczędzanie wody i energii to proste działania, które każdy może podjąć, aby zmniejszyć swój ślad węglowy i ekologiczny.</p>
+            `,
+            questions: [
+                { q: "Główny gaz cieplarniany emitowany przez człowieka to:", options: ["Tlen", "Argon", "Dwutlenek węgla", "Azot"], correct: 2 },
+                { q: "Zjawisko niszczenia lasów przez zanieczyszczone opady to:", options: ["Smog", "Kwaśne deszcze", "Erozja", "Pustynnienie"], correct: 1 },
+                { q: "Warstwa ozonowa chroni przed promieniowaniem:", options: ["Podczerwonym", "UV", "Radiowym", "Rentgenowskim"], correct: 1 },
+                { q: "Proces degradacji gleb w klimacie suchym to:", options: ["Erozja", "Pustynnienie", "Nawożenie", "Melioracja"], correct: 1 },
+                { q: "Smog fotochemiczny powstaje głównie w:", options: ["Lasach", "Dużych miastach", "Wsiach", "Nad morzem"], correct: 1 },
+                { q: "Recykling to:", options: ["Wyrzucanie śmieci", "Powtórne przetwarzanie", "Spalanie odpadów", "Składowanie"], correct: 1 },
+                { q: "Zrównoważony rozwój dba o pokolenia:", options: ["Tylko obecne", "Obecne i przyszłe", "Tylko przeszłe", "Nie dba o ludzi"], correct: 1 },
+                { q: "Topnienie lodowców powoduje:", options: ["Spadek poziomu mórz", "Wzrost poziomu mórz", "Więcej ryb", "Oziębienie wody"], correct: 1 },
+                { q: "Główna przyczyna wycinania lasów deszczowych to:", options: ["Turystyka", "Rolnictwo i kopalnie", "Budowa parków", "Ochrona przyrody"], correct: 1 },
+                { q: "Freony niszczą:", options: ["Wodę", "Ozonosferę", "Gleby", "Rośliny"], correct: 1 }
+            ]
+        },
+        {
+            id: 21,
+            title: "Geopolityka i podział świata",
+            date: "Rozdział 9.2",
+            icon: "fa-flag",
+            content: `
+                <h2>Mapa polityczna i organizacje międzynarodowe</h2>
+                <p>Mapa polityczna świata jest dynamiczna i ulega ciągłym zmianom. Obecnie na świecie istnieje blisko 200 niepodległych państw. Największym pod względem powierzchni jest Rosja, a najludniejszym Indie. Państwa różnią się ustrojem (republiki, monarchie) oraz strukturą terytorialną (państwa unitarne, federacje). Proces dekolonizacji po II wojnie światowej doprowadził do powstania wielu nowych państw w Afryce i Azji, co jednak często wiązało się z konfliktami granicznymi wynikającymi z sztucznie wytyczonych granic przez kolonizatorów.</p>
+                <p>Współczesna geopolityka opiera się na integracji i współpracy. Najważniejszą organizacją o charakterze ogólnym jest ONZ (Organizacja Narodów Zjednoczonych), powołana do utrzymania pokoju na świecie. Integracja gospodarcza i polityczna najsilniej widoczna jest w Unii Europejskiej (UE). Inne ważne bloki to NATO (sojusz militarny), strefa wolnego handlu USMCA (dawniej NAFTA) czy stowarzyszenie krajów Azji – ASEAN. Integracja niesie korzyści, jak brak granic i wspólna waluta, ale stawia też wyzwania dotyczące suwerenności państw.</p>
+                <p>Niestety świat nękany jest przez liczne konflikty zbrojne i napięcia. Przyczyny są różnorodne: religijne, etniczne, o surowce (ropa, woda) czy terytorialne. Do najbardziej zapalnych punktów globu należą Bliski Wschód, Afryka Środkowa oraz obszary poradzieckie (np. agresja Rosji na Ukrainę). Ważnym pojęciem jest terroryzm, który stał się zagrożeniem globalnym. Dyplomacja i pomoc humanitarna to główne narzędzia zapobiegania kryzysom, które generują fale uchodźców i destabilizują regiony.</p>
+            `,
+            questions: [
+                { q: "Największe państwo świata pod względem powierzchni to:", options: ["Chiny", "USA", "Rosja", "Kanada"], correct: 2 },
+                { q: "Organizacja powołana do utrzymania pokoju na świecie to:", options: ["NATO", "UE", "ONZ", "UNESCO"], correct: 2 },
+                { q: "Ile państw należy do Unii Europejskiej (stan na 2024)?", options: ["20", "27", "30", "15"], correct: 1 },
+                { q: "Sojusz militarny krajów zachodnich to:", options: ["ASEAN", "NATO", "OPEC", "NAFTA"], correct: 1 },
+                { q: "Państwo, w którym władzę sprawuje król lub królowa, to:", options: ["Republika", "Monarchia", "Federacja", "Emirat"], correct: 1 },
+                { q: "Główna siedziba ONZ znajduje się w:", options: ["Paryżu", "Londynie", "Nowym Jorku", "Genewie"], correct: 2 },
+                { q: "Integracja europejska rozpoczęła się od współpracy w zakresie:", options: ["Rolnictwa", "Węgla i stali", "Waluty", "Turystyki"], correct: 1 },
+                { q: "Enklawa to:", options: ["Wyspa", "Terytorium otoczone przez inny kraj", "Państwo nadmorskie", "Obszar bezludny"], correct: 1 },
+                { q: "Przyczyną konfliktu o Kaszmir jest spór między:", options: ["Rosją a Ukrainą", "Indiami a Pakistanem", "USA a Chinami", "Iranem a Irakiem"], correct: 1 },
+                { q: "Waluta Euro obowiązuje we wszystkich krajach UE?", options: ["Tak", "Nie"], correct: 1 }
+            ]
+        },
+        {
+            id: 22,
+            title: "Wskaźniki rozwoju (PKB, HDI)",
+            date: "Rozdział 10.1",
+            icon: "fa-chart-line",
+            content: `
+                <h2>Mierzenie poziomu życia na świecie</h2>
+                <p>Aby porównać poziom rozwoju gospodarczego i społecznego państw, stosuje się różne wskaźniki. Najpopularniejszym wskaźnikiem ekonomicznym jest PKB (Produkt Krajowy Brutto) na jednego mieszkańca. Pokazuje on łączną wartość dóbr i usług wytworzonych w kraju. Jednak PKB nie mówi wszystkiego o jakości życia – nie uwzględnia opieki zdrowotnej, edukacji czy swobód obywatelskich. Dlatego ONZ wprowadziło wskaźnik HDI (Human Development Index) – Wskaźnik Rozwoju Społecznego.</p>
+                <p>HDI bierze pod uwagę trzy parametry: oczekiwaną długość życia (stan zdrowia), średnią liczbę lat edukacji oraz dochód narodowy na osobę. Kraje o najwyższym HDI to zazwyczaj Norwegia, Szwajcaria, Irlandia czy Niemcy. Na dole rankingu znajdują się państwa dotknięte wojnami i skrajną biedą, głównie z Afryki Subsaharyjskiej (np. Niger, Czad). Polska zaliczana jest do krajów o bardzo wysokim poziomie rozwoju społecznego. Inne wskaźniki to np. wskaźnik Giniego (mierzący nierówności społeczne) czy MPI (wskaźnik wielowymiarowego ubóstwa).</p>
+                <p>Na świecie wyraźnie zarysowany jest podział na "Bogatą Północ" (Europa, Ameryka Północna, Japonia, Australia) oraz "Biedne Południe" (większość Afryki, Ameryki Łacińskiej i Azji Południowej). Przyczynami tych różnic są czynniki historyczne (kolonializm), polityczne (korupcja, wojny) oraz przyrodnicze (brak wody, trudny klimat). Pomoc rozwojowa oraz uczciwy handel (Fair Trade) to sposoby na niwelowanie tych drastycznych różnic, które są przyczyną masowych migracji ekonomicznych.</p>
+            `,
+            questions: [
+                { q: "Co oznacza skrót PKB?", options: ["Produkt Krajowy Brutto", "Polska Kasa Bankowa", "Państwowy Koszt Budowy", "Powszechny Kurs Biznesu"], correct: 0 },
+                { q: "Wskaźnik HDI mierzy:", options: ["Tylko zarobki", "Rozwój społeczno-ekonomiczny", "Liczbę ludności", "Zalesienie"], correct: 1 },
+                { q: "Który z wymienionych krajów ma najwyższe HDI?", options: ["Indie", "Norwegia", "Etiopia", "Brazylia"], correct: 1 },
+                { q: "Parametr HDI dotyczący zdrowia to:", options: ["Liczba szpitali", "Oczekiwana długość życia", "Ilość witamin", "Cena leków"], correct: 1 },
+                { q: "Wskaźnik Giniego określa:", options: ["Biedę", "Nierówności w dochodach", "Poziom edukacji", "Gęstość zaludnienia"], correct: 1 },
+                { q: "Kraje 'Bogatej Północy' leżą głównie na półkuli:", options: ["Północnej", "Południowej"], correct: 0 },
+                { q: "Fair Trade (Sprawiedliwy Handel) ma na celu pomoc:", options: ["Korporacjom", "Drobny wytwórcom z krajów biednych", "Państwom bogatym", "Turystom"], correct: 1 },
+                { q: "Polska w rankingu HDI zajmuje pozycję:", options: ["Bardzo niską", "Średnią", "Bardzo wysoką", "Nie ma nas w rankingu"], correct: 2 },
+                { q: "Analfabetyzm to problem głównie krajów:", options: ["Słabo rozwiniętych", "Wysoko rozwiniętych", "Skandynawskich", "Wyspiarskich"], correct: 0 },
+                { q: "Czy wysokie PKB zawsze oznacza wysokie HDI?", options: ["Tak", "Nie"], correct: 1 }
+            ]
+        },
+        {
+            id: 23,
+            title: "Turystyka na świecie i w Polsce",
+            date: "Rozdział 10.2",
+            icon: "fa-camera-retro",
+            content: `
+                <h2>Podróże jako gałąź gospodarki</h2>
+                <p>Turystyka to jedna z najszybciej rozwijających się dziedzin sektora usług. Dzielimy ją na turystykę wypoczynkową, poznawczą, zdrowotną, religijną czy biznesową. Rozwój turystyki zależy od walorów przyrodniczych (góry, morze, klimat) oraz kulturowych (zabytki, muzea, folklor). Ważna jest też infrastruktura: hotele, drogi, lotniska. Najczęściej odwiedzanymi krajami świata są Francja, Hiszpania, USA, Chiny i Włochy. Turystyka generuje ogromne dochody, ale może też prowadzić do zniszczenia środowiska i komercjalizacji kultury.</p>
+                <p>Polska posiada bogate walory turystyczne. Północ kraju to Wybrzeże Słowińskie z ruchomymi wydmami oraz Pojezierze Mazurskie – "Kraina Tysiąca Jezior". Południe to góry: Tatry (jedyne góry typu alpejskiego w Polsce), Sudety oraz Bieszczady. Walory kulturowe Polski to przede wszystkim miasta z historycznymi centrami (Kraków, Warszawa, Gdańsk, Wrocław, Toruń) oraz obiekty z listy UNESCO (np. Kopalnia Soli w Wieliczce, Zamek w Malborku czy obóz Auschwitz-Birkenau). Rozwija się również agroturystyka oraz turystyka aktywna (kajaki, rowery).</p>
+                <p>Wpływ turystyki na regiony może być pozytywny (nowe miejsca pracy, rozwój handlu) lub negatywny (hałas, śmieci, wzrost cen dla mieszkańców). Ważnym trendem jest turystyka zrównoważona (ekoturystyka), która minimalizuje negatywny wpływ na przyrodę. Po pandemii COVID-19 rynek turystyczny uległ przemianom, kładąc większy nacisk na bezpieczeństwo i turystykę krajową. Polska staje się coraz atrakcyjniejszym celem dla turystów zagranicznych, doceniających naszą gościnność i relatywnie niższe ceny.</p>
+            `,
+            questions: [
+                { q: "Walory turystyczne dzielimy na kulturowe i:", options: ["Sztuczne", "Przyrodnicze", "Drogie", "Nudne"], correct: 1 },
+                { q: "Najczęściej odwiedzany kraj świata to:", options: ["Polska", "Francja", "Egipt", "Kanada"], correct: 1 },
+                { q: "Jedyny obiekt przyrodniczy w Polsce na liście UNESCO to:", options: ["Wawel", "Puszcza Białowieska", "Morskie Oko", "Pałac Kultury"], correct: 1 },
+                { q: "Turystyka religijna to inaczej:", options: ["Biznes", "Pielgrzymka", "Wypoczynek", "Rehabilitacja"], correct: 1 },
+                { q: "Ruchome wydmy w Polsce znajdują się w:", options: ["Krakowie", "Słowińskim Parku Narodowym", "Wigierskim PN", "Na Mazurach"], correct: 1 },
+                { q: "Kraków leży nad rzeką:", options: ["Odrą", "Wisłą", "Wartą", "Bugiem"], correct: 1 },
+                { q: "Infrastruktura turystyczna to m.in.:", options: ["Lasy", "Baza noclegowa i transportowa", "Zabytki", "Pogoda"], correct: 1 },
+                { q: "Gdzie w Polsce znajduje się największy zamek krzyżacki?", options: ["W Malborku", "W Warszawie", "W Poznaniu", "W Lublinie"], correct: 0 },
+                { q: "Ekoturystyka stawia na:", options: ["Luksus", "Ochronę przyrody", "Szybki transport", "Duże grupy"], correct: 1 },
+                { q: "Czy turystyka to sektor usług?", options: ["Tak", "Nie"], correct: 0 }
+            ]
+        },
+        {
+            id: 24,
+            title: "Ochrona przyrody w Polsce",
+            date: "Rozdział 11.1",
+            icon: "fa-shield-halved",
+            content: `
+                <h2>System ochrony dziedzictwa naturalnego</h2>
+                <p>Ochrona przyrody w Polsce ma długą tradycję, sięgającą czasów królewskich (ochrona tura, żubra). Obecnie najważniejszą formą ochrony są Parki Narodowe, których mamy 23. Najstarszy to Pieniński (lub Białowieski, zależnie od definicji powstania jednostki), a największy to Biebrzański Park Narodowy, chroniący ogromne obszary bagienne. Parki Narodowe obejmują obszary o powierzchni powyżej 1000 ha, na których ochronie podlega cała przyroda oraz walory krajobrazowe. Wokół parków tworzy się otuliny, aby chronić je przed szkodliwym wpływem czynników zewnętrznych.</p>
+                <p>Inne formy ochrony to: Parki Krajobrazowe (mniej rygorystyczne, dopuszczające gospodarkę rolną i leśną), Rezerwaty Przyrody (chroniące konkretne gatunki lub formy terenu), Pomniki Przyrody (pojedyncze obiekty, np. stare drzewo Dąb Bartek) oraz ochrona gatunkowa roślin i zwierząt. Polska bierze udział w europejskim programie Natura 2000, który ma na celu ochronę zagrożonych siedlisk i gatunków na poziomie całego kontynentu. Ważną rolę pełnią też parki narodowe o charakterze transgranicznym (np. Tatrzański PN współpracujący ze słowackim TANAP-em).</p>
+                <p>Ochrona przyrody to nie tylko zakazy, ale też edukacja i turystyka edukacyjna. Symbolem polskich parków narodowych są zwierzęta, np. żubr (Białowieski), orzeł bielik (Woliński) czy salamandra (Gorczański). Problemem ochrony przyrody jest presja inwestycyjna (budowa dróg, hoteli) oraz zmiany klimatyczne, które zmieniają warunki życia chronionych gatunków. Dbając o polską przyrodę, zachowujemy unikalne skarby, jakimi są m.in. ostatnie fragmenty lasów pierwotnych Europy.</p>
+            `,
+            questions: [
+                { q: "Ile jest Parków Narodowych w Polsce?", options: ["10", "23", "50", "15"], correct: 1 },
+                { q: "Największy Park Narodowy w Polsce to:", options: ["Tatrzański", "Biebrzański", "Kampinoski", "Słowiński"], correct: 1 },
+                { q: "Symbolem Białowieskiego PN jest:", options: ["Orzeł", "Żubr", "Ryś", "Łoś"], correct: 1 },
+                { q: "Dąb Bartek to przykład ochrony w formie:", options: ["Parku", "Pomnika przyrody", "Rezerwatu", "ZOO"], correct: 1 },
+                { q: "Europejska sieć ochrony przyrody to:", options: ["Natura 2000", "Greenpeace", "UNESCO", "Schengen"], correct: 0 },
+                { q: "Park Narodowy chroniący ruchome wydmy to:", options: ["Woliński", "Słowiński", "Bieszczadzki", "Poleski"], correct: 1 },
+                { q: "W Parku Narodowym dopuszcza się polowania?", options: ["Tak", "Nie"], correct: 1 },
+                { q: "Otulina parku to:", options: ["Czapka", "Strefa ochronna wokół parku", "Miejsce dla zwierząt", "Rzeka w parku"], correct: 1 },
+                { q: "Gdzie znajduje się Świętokrzyski PN?", options: ["W górach na południu", "W centrum Polski", "Nad morzem", "Na Mazurach"], correct: 1 },
+                { q: "Najstarszy polski Park Narodowy to m.in.:", options: ["Pieniński", "Wigierski", "Bory Tucholskie", "Ujście Warty"], correct: 0 }
+            ]
+        },
+        {
+            id: 25,
+            title: "Rodzaje ptaków w Polsce",
+            date: "Rozdział 11.2",
+            icon: "fa-camera-retro",
+            content: `
+                <h2>Rodzaje Ptaków W Polsce</h2>
+                <p><h>Bocian biały</h> - symbol polskiej wsi. Duży ptak o białym upierzeniu z czarnymi lotkami, czerwonym dziobie i nogach. Buduje ogromne gniazda na dachach i słupach.</p>
+                <p><h>Zięba</h> - jeden z najliczniejszych ptaków w polskich lasach. Samiec ma charakterystyczną rdzawą pierś i szaroniebieską czapeczkę.</p>
+                <p><h>Kowalik</h> - mały ptak, który jako jedyny w Polsce potrafi schodzić po pniu drzewa głową w dół. Ma stalowoszary grzbiet i długi dziób.</p>
+                <p><h>Dudek</h> - niezwykle barwny ptak z charakterystycznym czubem na głowie, który rozkłada w chwilach ekscytacji. Ma pomarańczowe ciało i czarno-białe skrzydła.</p>
+                <p><h>Zimorodek</h> - "latający klejnot". Mały ptak o intensywnie niebieskim grzbiecie i pomarańczowym brzuchu. Żyje nad czystymi rzekami, gdzie poluje na ryby.</p>
+                <p><h>Puszczyk</h> – najpospolitsza polska sowa. Ma krępą budowę ciała, dużą głowę i ciemne oczy. Jest aktywny głównie nocą.</p>
+                <p><h>Dzięcioł duży</h> – najbardziej znany przedstawiciel dzięciołów. Ma czarno-białe upierzenie i jaskrawoczerwoną podogonie (samce mają też czerwoną plamkę z tyłu głowy).</p>
+                <p><h>Żuraw</h> – duży, majestatyczny ptak o szarym upierzeniu. Znany z charakterystycznego głosu zwanego klangorem oraz widowiskowych tańców godowych.</p>
+                <p><h>Sikora bogatka</h> – łatwo rozpoznawalna dzięki żółtemu brzuszkowi z czarnym "krawatem" i czarnej główce z białymi policzkami.</p>
+                <p><h>Czapla siwa</h> – duży ptak wodny o smukłej sylwetce, długiej szyi i popielatym upierzeniu. Często można ją spotkać nieruchomo stojącą przy brzegu jeziora.</p>
+            `,
+            questions: [
+                { q: `Jaki to ptak?<br><img src="images/bocian.jpg" style="max-width:300px;">`,
+  options: ["Bocian", "Żuraw", "Czapla", "Kaczka"],
+  correct: 0 },
+                { q: "Najczęściej odwiedzany kraj świata to:", options: ["Polska", "Francja", "Egipt", "Kanada"], correct: 1 },
+                { q: "Jedyny obiekt przyrodniczy w Polsce na liście UNESCO to:", options: ["Wawel", "Puszcza Białowieska", "Morskie Oko", "Pałac Kultury"], correct: 1 },
+                { q: "Turystyka religijna to inaczej:", options: ["Biznes", "Pielgrzymka", "Wypoczynek", "Rehabilitacja"], correct: 1 },
+                { q: "Ruchome wydmy w Polsce znajdują się w:", options: ["Krakowie", "Słowińskim Parku Narodowym", "Wigierskim PN", "Na Mazurach"], correct: 1 },
+                { q: "Kraków leży nad rzeką:", options: ["Odrą", "Wisłą", "Wartą", "Bugiem"], correct: 1 },
+                { q: "Infrastruktura turystyczna to m.in.:", options: ["Lasy", "Baza noclegowa i transportowa", "Zabytki", "Pogoda"], correct: 1 },
+                { q: "Gdzie w Polsce znajduje się największy zamek krzyżacki?", options: ["W Malborku", "W Warszawie", "W Poznaniu", "W Lublinie"], correct: 0 },
+                { q: "Ekoturystyka stawia na:", options: ["Luksus", "Ochronę przyrody", "Szybki transport", "Duże grupy"], correct: 1 },
+                { q: "Czy turystyka to sektor usług?", options: ["Tak", "Nie"], correct: 0 }
+            ]
+        }
+    ];
+
+    let currentLesson = null;
+    let unlockedLessons = JSON.parse(localStorage.getItem('geo_unlocked')) || [1];
+
+    function init() {
+        renderLessonList();
+        updateProgress();
+    }
+
+    function renderLessonList() {
+        const listContainer = document.getElementById('list-view');
+        listContainer.innerHTML = '';
+
+        lessonsData.forEach((lesson) => {
+            const isLocked = !unlockedLessons.includes(lesson.id);
+            const isCompleted = unlockedLessons.includes(lesson.id + 1);
+            
+            const card = document.createElement('div');
+            card.className = `lesson-card ${isLocked ? 'locked' : ''} fade-in`;
+            card.onclick = () => !isLocked && openLesson(lesson.id);
+
+            card.innerHTML = `
+                <div class="lesson-icon">
+                    <i class="fas ${isLocked ? 'fa-lock' : lesson.icon}"></i>
+                </div>
+                <div class="lesson-info">
+                    <span>${lesson.date}</span>
+                    <h3>Lekcja ${lesson.id}: ${lesson.title}</h3>
+                </div>
+                <div class="status-icon">
+                    ${isCompleted ? '<i class="fas fa-check-circle" style="color:var(--success)"></i>' : 
+                      (isLocked ? '' : '<i class="fas fa-chevron-right"></i>')}
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+
+    function openLesson(id) {
+        currentLesson = lessonsData.find(l => l.id === id);
+        document.getElementById('list-view').style.display = 'none';
+        document.getElementById('lesson-view').style.display = 'block';
+        
+        document.getElementById('lesson-content').innerHTML = currentLesson.content;
+        
+        const quizContainer = document.getElementById('quiz-container');
+        quizContainer.innerHTML = '';
+        
+        currentLesson.questions.forEach((q, qIdx) => {
+            const qBox = document.createElement('div');
+            qBox.className = 'question-box';
+            qBox.innerHTML = `<p><strong>Pytanie ${qIdx+1}:</strong> ${q.q}</p>
+                <div class="options">
+                    ${q.options.map((opt, oIdx) => `
+                        <label class="option-label">
+                            <input type="radio" name="q${qIdx}" value="${oIdx}">
+                            ${opt}
+                        </label>
+                    `).join('')}
+                </div>`;
+            quizContainer.appendChild(qBox);
+        });
+
+        document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('result-msg').style.display = 'none';
+        window.scrollTo(0, 0);
+    }
+
+    function showListView() {
+        document.getElementById('list-view').style.display = 'grid';
+        document.getElementById('lesson-view').style.display = 'none';
+        renderLessonList();
+    }
+
+    function checkQuiz() {
+        const questions = currentLesson.questions;
+        let score = 0;
+        
+        questions.forEach((q, qIdx) => {
+            const selected = document.querySelector(`input[name="q${qIdx}"]:checked`);
+            const labels = document.querySelectorAll(`input[name="q${qIdx}"]`);
+            
+            labels.forEach(input => {
+                const label = input.parentElement;
+                const val = parseInt(input.value);
+                
+                if(val === q.correct) label.classList.add('correct');
+                if(selected && parseInt(selected.value) === val && val !== q.correct) {
+                    label.classList.add('wrong');
+                }
+                input.disabled = true;
+            });
+
+            if(selected && parseInt(selected.value) === q.correct) score++;
+        });
+
+        const percent = (score / questions.length) * 100;
+        const msg = document.getElementById('result-msg');
+        msg.style.display = 'block';
+
+        if(percent >= 80) {
+            msg.innerHTML = `<span style="color:var(--success)">Zaliczone! ✅ Wynik: ${score}/${questions.length}</span>`;
+            if(!unlockedLessons.includes(currentLesson.id + 1) && currentLesson.id < lessonsData.length) {
+                unlockedLessons.push(currentLesson.id + 1);
+                localStorage.setItem('geo_unlocked', JSON.stringify(unlockedLessons));
+            }
+        } else {
+            msg.innerHTML = `<span style="color:var(--error)">Spróbuj ponownie ❌ Wynik: ${score}/${questions.length} (wymagane 80%)</span>`;
+        }
+
+        document.getElementById('check-btn').style.display = 'none';
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const total = lessonsData.length;
+        const completed = unlockedLessons.length - 1;
+        const percent = Math.round((completed / total) * 100);
+        document.getElementById('progress-bar').style.width = percent + '%';
+        document.getElementById('progress-text').innerText = `Postęp: ${percent}%`;
+    }
+
+    init();
+</script>
+</body>
+</html>
